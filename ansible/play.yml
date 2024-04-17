@@ -1,0 +1,12 @@
+---
+- name: Configure the Domain controller
+  hosts: domain_controllers
+  roles:
+    - common
+    - domain_controller
+
+- name: Configure the Remaining Windows servers
+  hosts: win_servers
+  roles:
+    - common
+    - domain_server

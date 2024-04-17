@@ -1,0 +1,21 @@
+- name: Get IP of the first domain controller
+  set_fact:
+    domain_controller_ip: "{{ hostvars[groups['domain_controllers'][0]]['ansible_host'] | default(groups['domain_controllers'][0]) }}"
+
+- name: Use the IP of the first domain controller in another task
+  debug:
+    msg: "Using the first domain controller IP: {{ domain_controller_ip }}"
+
+- name: set the dns server of the host to point to the DC
+  win_dns_client:
+    adapter_names: '*'
+    ipv4_addresses:
+      - "{{ domain_controller_ip }}"
+
+- name: join host to the domain with automatic reboot
+  microsoft.ad.membership:
+    dns_domain_name: "{{ domain_name }}"
+    domain_admin_user: "Administrator@{{ domain_name }}"
+    domain_admin_password: "{{ domain_admin_password }}"
+    state: domain
+    reboot: true

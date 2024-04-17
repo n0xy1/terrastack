@@ -1,0 +1,8 @@
+---
+- name: Test Deployment 
+  hosts: win_servers  # Ensure this matches the group in your inventory that includes your Windows hosts
+  gather_facts: yes
+
+  tasks:
+    - name: Test connectivity with the hosts
+      win_ping:

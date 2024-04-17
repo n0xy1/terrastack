@@ -1,0 +1,6 @@
+---
+- name: Reset the Local Administrator Password
+  ansible.windows.win_user:
+    name: Administrator
+    password: "{{ domain_admin_password }}"
+    state: present
