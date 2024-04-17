@@ -15,4 +15,4 @@ Specify the location of the SOPS key.
 export SOPS_AGE_KEY_FILE=/Users/d/.config/age/terraform_key.txt
 ```
 
-
+If you have direnv, instead of exporting those every time, just run `direnv allow .envrc`
