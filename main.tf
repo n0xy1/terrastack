@@ -19,7 +19,7 @@ data "sops_file" "proj-secrets" {
 # Setup the credentials for openstack
 provider "openstack" {
   user_name   = "admin"
-  tenant_name = "admin_project"
+  tenant_name = "Walshy"
   password    = data.sops_file.proj-secrets.data["openstack-password-quokka"]
   auth_url    = "https://10.100.0.254:5000"
   region      = "RegionOne"

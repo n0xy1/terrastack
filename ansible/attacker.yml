@@ -1,0 +1,19 @@
+---
+
+- name: Configure the attacker box 
+  hosts: attacker
+  gather_facts: yes
+  become: true
+  pre_tasks:
+    - name: Load Encrypted details
+      community.sops.load_vars:
+        file: data/vpn_data.sops.json
+      when: vpn_enabled | default(true) | bool
+    - name: Test creds
+      debug:
+        msg: "The vpn remote ip is set to {{ wireguard_server_public_ip}}"
+      when: vpn_enabled | default(true) | bool
+  roles:
+    - attacker
+    - { role: wireguard, when: vpn_enabled | default(true) | bool }
+

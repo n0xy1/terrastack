@@ -25,3 +25,6 @@ ${bastion_ip}
 
 [attacker]
 ${attacker_ip}
+
+[attacker:vars]
+ansible_user=kali

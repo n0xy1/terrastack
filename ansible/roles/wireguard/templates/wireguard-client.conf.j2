@@ -1,0 +1,11 @@
+[Interface]
+# PubKey {{ item.3 }}
+PrivateKey = {{ item.2 }}
+Address = {{ item.1 }}
+DNS = 8.8.8.8  # Optional: Set your DNS server
+
+
+[Peer]
+PublicKey = {{ server_public_key }}
+Endpoint = {{ server_public_ip }}:51820
+AllowedIPs = 192.168.254.0/24

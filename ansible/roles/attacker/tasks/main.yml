@@ -1,0 +1,150 @@
+---
+- name: Hush the login message
+  become: false
+  ansible.builtin.file:
+    path: /home/kali/.hushlogin
+    state: touch
+      
+- name: Upgrade the os.
+  ansible.builtin.apt:
+    upgrade: dist
+
+- name: Install default list of packages
+  ansible.builtin.apt:
+    pkg:
+    - nmap
+    - impacket-scripts
+    - git
+    - pipx
+    - tmux
+    # - sliver
+    - fzf
+    - ruby-rubygems
+    - msfpc
+    - wordlists
+    - wireguard
+    - openvpn
+    - vim
+
+- name: Esnure path for pipx
+  become: false
+  ansible.builtin.command: pipx ensurepath
+
+- name: Install netexec (check existence)
+  stat:
+    path: /home/kali/.local/bin/netexec
+  register: netexec_stat
+
+- name: Install netexec (new install)
+  become: false
+  community.general.pipx:
+    name: NetExec
+    source: git+https://github.com/Pennyw0rth/NetExec.git
+  when: not netexec_stat.stat.exists
+
+- name: Get tmux plugins
+  become: false
+  ansible.builtin.git:
+    repo: https://github.com/tmux-plugins/tpm
+    dest: /home/kali/.tmux/plugins/tpm
+
+- name: Setup tmux config
+  ansible.builtin.copy:
+    src: files/tmux.conf
+    dest: /home/kali/.tmux.conf
+    owner: kali
+    group: kali
+    mode: 0640
+
+- name: Install evil-winrm
+  community.general.gem:
+    name: evil-winrm
+    state: present
+
+- name: Expand the rockyou wordlist
+  ansible.builtin.command:
+    cmd: gunzip /usr/share/wordlists/rockyou.txt.gz
+    creates: /usr/share/wordlists/rockyou.txt
+
+- name: Setup home binary directory
+  become: false
+  ansible.builtin.file:
+    path: /home/kali/bin
+    state: directory
+    owner: kali
+    group: kali
+
+- name: Setup home resource directory
+  become: false
+  ansible.builtin.file:
+    path: /home/kali/resources
+    state: directory
+    owner: kali
+    group: kali
+
+- name: Fetch latest release of ligolo-ng
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/nicocha30/ligolo-ng/releases/latest
+    return_content: true                                             
+  register: ligolo_json_response                                             
+
+- name: Filter assets for linux amd64
+  set_fact:
+    filtered_assets_lin: "{{ ligolo_json_response.json.assets | selectattr('name', 'search', 'linux_amd64.tar.gz') | list }}"
+
+- name: Filter assets for windows amd64
+  set_fact:
+    filtered_assets_win: "{{ ligolo_json_response.json.assets | selectattr('name', 'search', 'windows_amd64.zip') | list }}"
+
+- name: Check if ligolo proxy already exists
+  ansible.builtin.stat:
+    path: /home/kali/bin/proxy
+  register: proxy_exists
+
+- name: "Download latest ligolo releases: tag: {{ ligolo_json_response.json.tag_name }}  (linux amd64)"
+  loop: "{{ filtered_assets_lin }}"
+  unarchive:
+    remote_src: yes
+    src: "{{ item.browser_download_url }}"
+    dest: "/home/kali/bin/"
+    keep_newer: yes
+  when: not proxy_exists.stat.exists
+    
+- name: Symlink ligolo binary 
+  ansible.builtin.file:
+    src: /home/kali/bin/proxy
+    dest: /usr/local/bin/ligolo-proxy
+    state: link
+  when: not proxy_exists.stat.exists
+
+- name: Remove extra files
+  ansible.builtin.file:
+    path: /home/kali/bin/LICENSE
+    state: absent
+
+- name: Remove extra files
+  ansible.builtin.file:
+    path: /home/kali/bin/README.md
+    state: absent
+
+- name: "Make ligolo windows resource dir."
+  ansible.builtin.file:
+    path: /home/kali/resources/ligolo
+    state: directory
+    owner: kali
+    group: kali
+
+- name: "Check ligolo agent for windows exists"
+  ansible.builtin.stat:
+    path: /home/kali/resources/ligolo/agent.exe
+  register: win_agent_exists
+
+- name: "Download latest ligolo releases: tag: {{ ligolo_json_response.json.tag_name }}  (win amd64)"
+  loop: "{{ filtered_assets_win }}"
+  unarchive:
+    remote_src: yes
+    src: "{{ item.browser_download_url }}"
+    dest: "/home/kali/resources/ligolo"
+    keep_newer: yes
+  when: not win_agent_exists.stat.exists
+

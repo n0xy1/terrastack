@@ -20,3 +20,16 @@
       - Domain Admins
       - Domain Users
 
+- name: Ensure Administrator is part of Enterprise Admins
+  win_domain_group_membership:
+    name: "Enterprise Admins"
+    members:
+      - Administrator
+    state: present
+
+- name: Ensure Administrator is part of Domain Admins
+  win_domain_group_membership:
+    name: "Domain Admins"
+    members:
+      - Administrator
+    state: present

@@ -1,0 +1,44 @@
+- name: Generate WireGuard Key Pair
+  ansible.builtin.command: wg genkey
+  register: wg_key
+
+- name: DEBUG PKEY
+  ansible.builtin.debug:
+    msg: "WG PRIVKEY: {{ wg_key.stdout }}"
+
+- name: Generate WireGuard Pubkey
+  ansible.builtin.command: wg pubkey
+  args:
+    stdin: "{{ wg_key.stdout }}"
+  register: wg_pubkey
+
+- name: Generate WireGuard Config
+  template:
+    src: templates/wireguard-client.conf.j2
+    dest: /etc/wireguard/{{ item.0 }}.conf
+    owner: root
+    group: root
+    mode: '0600'
+  loop: "{{ client_info }}"
+  vars:
+    client_info:
+      - ["client0", "192.168.254.2/32", "{{ wg_key.stdout }}", "{{ wg_pubkey.stdout }}"]
+    server_public_key: "{{ wireguard_server_public_key }}"
+    server_public_ip: "{{ wireguard_server_public_ip }}"
+
+- name: Rebuild Wireguard Server Config
+  become: false
+  template:
+    src: templates/wireguard-server.conf.j2
+    dest: wireguard-server.conf
+  loop: "{{ client_info }}"
+  vars:
+    client_info:
+    - ["client0", "192.168.254.2/32", "{{ wg_pubkey.stdout }}"]
+    server_public_key: "{{ wireguard_server_public_key }}"
+    server_private_key: "{{ wireguard_server_private_key }}"
+  delegate_to: localhost
+
+- name: REMIND!
+  ansible.builtin.debug:
+    msg: "wireguard server.conf has been generated, remember to update it on the remote."
